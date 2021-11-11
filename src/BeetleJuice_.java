@@ -124,7 +124,7 @@ class GetBlinks extends Thread {
     // Get X position (based on random motion)
     public float getX(int initialX) {
         Random rand = new Random();
-        float amplitude = (float) (rand.nextFloat()* sqrt(maxRadius)); // Amplitude
+        float amplitude = (float) (maxRadius * sqrt(rand.nextFloat())); // Amplitude
         float alpha = (float) (rand.nextFloat()*2*PI); // Angle (in radians)
 
         return (float) round(amplitude*cos(alpha)+initialX);
@@ -133,7 +133,7 @@ class GetBlinks extends Thread {
     // Get Y position (based on random motion)
     public float getY(float initialY) {
         Random rand = new Random();
-        float amplitude = (float) (rand.nextFloat()*sqrt(maxRadius)); // Amplitude
+        float amplitude = (float) (maxRadius * sqrt(rand.nextFloat())); // Amplitude
         float alpha = (float) (rand.nextFloat()*2*PI); // Angle (in radians)
 
         return (float) round(amplitude*sin(alpha)+initialY);
