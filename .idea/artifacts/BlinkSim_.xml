@@ -1,0 +1,8 @@
+<component name="ArtifactManager">
+  <artifact type="jar" build-on-make="true" name="BlinkSim_">
+    <output-path>/Applications/Fiji.app/plugins</output-path>
+    <root id="archive" name="BlinkSim_.jar">
+      <element id="module-output" name="BlinkSim" />
+    </root>
+  </artifact>
+</component>
