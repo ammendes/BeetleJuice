@@ -3,13 +3,14 @@ import ij.plugin.PlugIn;
 import org.apache.commons.math3.distribution.LogNormalDistribution;
 import java.io.*;
 import java.util.Random;
+
 import static java.lang.Math.*;
 
 public class BeetleJuice_ implements PlugIn {
 
     //---- Define variables ----
-    int windowWidth = 2500; // Width of the FOV (in microns?)
-    int windowHeight = 2500; // Height of the FOV (in microns?)
+    int windowWidth = 2500; // Width of the FOV (in pixels)
+    int windowHeight = 2500; // Height of the FOV (in pixels)
     int nFrames = 20000; // Total number of frames to simulate
     float blinksPerFrame = 0.041F; // Empirical; 820 localisations in a ~200 nm diameter Gag VLP with STORM (55% DoL).
     int nBlinks = (int) (nFrames*blinksPerFrame);
@@ -52,7 +53,6 @@ public class BeetleJuice_ implements PlugIn {
         //---- Get blinks for each frame ----
         for (int frame = 1; frame <= nFrames; frame = frame + framesPerBlink) {
             GetBlinks blinks = new GetBlinks();
-
             blinks.setup(localisationTable, id, frame, initialX, initialY, maxRadius, sigmaMean, sigmaVar, sigmaMin,
                     sigmaMax, intensityMean, intensityStdDev, intensityMin, intensityMax, offsetMean, offsetVar,
                     offsetMin,offsetMax, bkgStdMean, bkgStdVar, bkgStdMin, bkgStdMax, chi2Mean, chi2Var, chi2Min,
@@ -61,7 +61,7 @@ public class BeetleJuice_ implements PlugIn {
             id += 1;
         }
 
-        // Add headers and write to file (.csv)
+        // Add headers to the final table and write to file (.csv)
         localisationTable[0] = "id, frame, x [nm], y [nm], sigma [nm], intensity [photon], offset [photon], bkgstd [photon], chi2, uncertainty [nm]";
 
         BufferedWriter bw = null;
@@ -85,14 +85,16 @@ public class BeetleJuice_ implements PlugIn {
 class GetBlinks extends Thread {
     String[] localisationTable;
     int id, frame, initialX, initialY;
-    float x, y, maxRadius, sigma, intensity, offset, bkgStd, chi2, uncertainty;
+    float maxRadius, sigma, intensity, offset, bkgStd, chi2, uncertainty;
+    float[] xy;
 
     public void setup(String[] localisationTable, int id, int frame, int initialX, int initialY, float maxRadius,
                       float sigmaMean, float sigmaVar, float sigmaMin, float sigmaMax, float intensityMean,
-                      float intensityStdDev, float intensityMin, float intensityMax, float offsetMean, float offsetVar, float offsetMin, float offsetMax,
-                      float bkgStdMean, float bkgStdVar, float bkgStdMin, float bkgStdMax, float chi2Mean,
-                      float chi2Var, float chi2Min, float chi2Max, float uncertaintyMean, float uncertaintyVar,
-                      float uncertaintyMin, float uncertaintyMax) {
+                      float intensityStdDev, float intensityMin, float intensityMax, float offsetMean, float offsetVar,
+                      float offsetMin, float offsetMax, float bkgStdMean, float bkgStdVar, float bkgStdMin,
+                      float bkgStdMax, float chi2Mean, float chi2Var, float chi2Min, float chi2Max,
+                      float uncertaintyMean, float uncertaintyVar, float uncertaintyMin, float uncertaintyMax)
+    {
 
         this.id = id;
         this.frame = frame;
@@ -100,8 +102,7 @@ class GetBlinks extends Thread {
         this.initialY = initialY;
         this.maxRadius = maxRadius;
         this.localisationTable = localisationTable;
-        x = getX(initialX);
-        y = getY(initialY);
+        xy = getXY(initialX, initialY, maxRadius);
         sigma = getTruncatedNormal(sigmaMean, sigmaVar, sigmaMin, sigmaMax);
         intensity = getLogNormal(intensityStdDev, intensityMean, intensityMin, intensityMax);
         offset = getTruncatedNormal(offsetMean, offsetVar, offsetMin, offsetMax);
@@ -112,32 +113,68 @@ class GetBlinks extends Thread {
 
     @Override
     public void run() {
-
-        // Store in table
-        localisationTable[id] = id + "," + frame + "," + x + "," + y + "," + sigma + "," + intensity + "," + offset +
+        // Store localisations in the final table
+        localisationTable[id] = id + "," + frame + "," + xy[0] + "," + xy[1] + "," + sigma + "," + intensity + "," + offset +
                 "," + bkgStd + "," + chi2 + "," + uncertainty;
-
-
     }
 
     //---- USER METHODS ----
-    // Get X position (based on random motion)
-    public float getX(int initialX) {
+    // Get XY position (uniformly distributed points in a circle of defined radius)
+    public float[] getXY(float initialX, float initialY, float maxRadius) {
+        float[] positions = new float[2];
         Random rand = new Random();
-        float amplitude = (float) (maxRadius * sqrt(rand.nextFloat())); // Amplitude
-        float alpha = (float) (rand.nextFloat()*2*PI); // Angle (in radians)
 
-        return (float) round(amplitude*cos(alpha)+initialX);
+        for(int i = 1; i<=1500; i++) {
+            float stepMagnitude;
+            float theta = (float) (rand.nextFloat() * 2 * PI);
+            float u = rand.nextFloat() + rand.nextFloat();
+            if (u > 1) {
+                stepMagnitude = 2 - u;
+            } else {
+                stepMagnitude = u;
+            }
+            positions[0] = (float) (maxRadius*stepMagnitude * cos(theta) + initialX);
+            positions[1] = (float) (maxRadius*stepMagnitude * sin(theta) + initialY);
+        }
+        return positions;
     }
+
+
+
 
     // Get Y position (based on random motion)
     public float getY(float initialY) {
+        Random rand = new Random();
+        float theta = (float) (2 * PI * rand.nextFloat());
+        float amplitude = (float) sqrt(pow(maxRadius, 2) * rand.nextFloat());
+
+        return (float) (initialY+amplitude * sin(theta));
+    }
+
+        // Points are too centered
+        /*
+        Random rand = new Random();
+        float a = rand.nextFloat();
+        float b = rand.nextFloat();
+        float nextPosition;
+
+        if (a<b) {
+            nextPosition = (float) (initialY+b*maxRadius*sin(2*PI*(a/b)));
+        }else{
+            nextPosition = (float) (initialY+b*maxRadius*sin(2*PI*(b/a)));
+        }
+        return nextPosition;
+        */
+
+        // More uniform than the previous one
+        /*
         Random rand = new Random();
         float amplitude = (float) (maxRadius * sqrt(rand.nextFloat())); // Amplitude
         float alpha = (float) (rand.nextFloat()*2*PI); // Angle (in radians)
 
         return (float) round(amplitude*sin(alpha)+initialY);
-    }
+        */
+
 
     float getTruncatedNormal(float mean, float variance, float min, float max) {
         Random rand = new Random();
