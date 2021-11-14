@@ -6,7 +6,7 @@ import java.util.Random;
 
 import static java.lang.Math.*;
 
-public class BeetleJuice_ implements PlugIn {
+public class Betelgeuse_ implements PlugIn {
 
     //---- Define variables ----
     int windowWidth = 2500; // Width of the FOV (in pixels)
@@ -139,43 +139,7 @@ class GetBlinks extends Thread {
         return positions;
     }
 
-
-
-
-    // Get Y position (based on random motion)
-    public float getY(float initialY) {
-        Random rand = new Random();
-        float theta = (float) (2 * PI * rand.nextFloat());
-        float amplitude = (float) sqrt(pow(maxRadius, 2) * rand.nextFloat());
-
-        return (float) (initialY+amplitude * sin(theta));
-    }
-
-        // Points are too centered
-        /*
-        Random rand = new Random();
-        float a = rand.nextFloat();
-        float b = rand.nextFloat();
-        float nextPosition;
-
-        if (a<b) {
-            nextPosition = (float) (initialY+b*maxRadius*sin(2*PI*(a/b)));
-        }else{
-            nextPosition = (float) (initialY+b*maxRadius*sin(2*PI*(b/a)));
-        }
-        return nextPosition;
-        */
-
-        // More uniform than the previous one
-        /*
-        Random rand = new Random();
-        float amplitude = (float) (maxRadius * sqrt(rand.nextFloat())); // Amplitude
-        float alpha = (float) (rand.nextFloat()*2*PI); // Angle (in radians)
-
-        return (float) round(amplitude*sin(alpha)+initialY);
-        */
-
-
+    // Get a truncated normal distribution
     float getTruncatedNormal(float mean, float variance, float min, float max) {
         Random rand = new Random();
         double number = mean + rand.nextGaussian() * variance;
@@ -194,4 +158,5 @@ class GetBlinks extends Thread {
         }
         return (float) number;
     }
+
 }
